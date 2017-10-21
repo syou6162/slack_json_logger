@@ -1,0 +1,31 @@
+#!/bin/sh
+
+index="slack"
+type="message"
+
+# curl -XDELETE http://localhost:9200/$index
+# curl -XPUT localhost:9200/$index
+# curl -XPUT localhost:9200/$index/$type/_mapping -d '
+# {
+#     "message": {
+#         "properties": {
+#             "date": { "type": "date", "format": "basic_date_time_no_millis" },
+#             "team": {"type": "string", "index": "not_analyzed"},
+#             "channel": {"type": "string", "index": "not_analyzed"},
+#             "username": {"type": "string", "index": "not_analyzed"}
+#         }
+#     }
+# }
+# '
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+LOG_FILENAME="${SCRIPT_DIR}/slack.log"
+
+${SCRIPT_DIR}/slack_json_logger $1 |
+  while read line
+  do
+    id=$(echo $line | jq -c 'select(.ts != null) | .ts' 2>/dev/null | tr -d "\n")
+    if [ "$id" != "" ] ;then
+      echo "{ \"index\" : { \"_index\" : \"slack\", \"_type\" : \"message\", \"_id\" : ${id}} }\n$line"
+    fi
+  done | curl -s -H "Content-Type: application/x-ndjson" -XPOST ${HOST_IP}:${HOST_PORT}/_bulk --data-binary @- | jq -c -M '.' >> ${LOG_FILENAME}
