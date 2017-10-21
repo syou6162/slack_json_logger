@@ -26,7 +26,7 @@ func getUserId2UserNameMap(users []slack.User) map[string]string {
 	return m
 }
 
-const layout = "20060102T15:04:05-07:00"
+const layout = "20060102T150405-07:00"
 
 func main() {
 	api := slack.New(os.Args[1])
